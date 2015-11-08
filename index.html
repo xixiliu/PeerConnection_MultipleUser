@@ -1,0 +1,133 @@
+
+<html>
+	<head>
+		<script src="peer.min.js"></script>
+		
+		<script type="text/javascript">
+
+			//this is myId;
+			var mypeerId = null;
+			var otherId = null;
+			var myElement,otherElement;
+			var myRole = false;
+
+			var peer = null;
+			var connected = false;
+
+			//this is OtherId
+			var connection = null;
+			
+			var init = function() {
+					
+				peer = new Peer({host: '104.131.82.13', port: 9000, path: '/'});
+				
+				peer.on('open', function(id) {
+				  console.log('My peer ID is: ' + id);
+				  mypeerId = id;
+				});
+				
+				peer.on('connection', function(conn) {
+					connection = conn;
+				
+					connection.on('open', function() {
+						document.getElementById('chatlog').innerHTML += "Connection Established";
+						connected = true;
+					});
+					
+					connection.on('data', function(data) {
+
+						if( data.role == "caller" && myRole === false){
+							myRole = "callee";
+							//I am a callee!
+							assignElement( myRole );
+						}
+
+						//console.log("callee_recive!");
+						otherElement.style.top=data.y;
+						otherElement.style.left=data.x;
+
+					});
+				});
+			
+				document.body.addEventListener('mousemove',function(evt){
+
+				//console.log("oh!");
+
+     			if(connected){
+
+     			//console.log("hi!");
+     			myElement.style.top=evt.clientY;
+				myElement.style.left=evt.clientX;
+				connection.send({id: mypeerId, role: myRole, x: evt.clientX, y: evt.clientY});
+				}
+
+				});
+
+			};
+
+			var placecall = function() {
+
+				connection = peer.connect(document.getElementById('other_peer_id').value);
+
+				connection.on('open', function() {
+
+					// updating Status //
+					document.getElementById('chatlog').innerHTML += "Connection Established";
+					if( myRole === false ){
+					myRole = "caller";
+					assignElement( myRole );
+					}
+					else{
+						console.log("call_already_placed!");
+					}
+
+					connected = true;
+
+				});
+
+				connection.on('data', function(data) {
+					//console.log("caller_recive!");
+					otherElement.style.top=data.y;
+					otherElement.style.left=data.x;
+				});
+			};	
+	
+		</script>
+	</head>
+	
+	<body onload="init()">
+		<div id="redBox" style="position:absolute;top:0px;left:0px; background:red; height:10px; width:10px;"></div>
+		<div id="greenBox" style="position:absolute;top:0px;left:100px; background:green; height:10px; width:10px;"></div>
+		
+		<input type="text" id="other_peer_id" value="PeerID to Call">
+		<input type="button" value="Call" onclick="placecall()"><br />
+		<div id="chatlog"></div>
+
+
+	</body>
+
+	<script>
+
+	function assignElement( role ){
+
+				var redBox = document.getElementById('redBox');
+				var greenBox = document.getElementById('greenBox');
+
+				if( role == "caller" ){
+					//go red;
+					myElement = redBox;
+					otherElement = greenBox;
+					console.log("I'm the caller!");
+				}
+				else if( role == "callee" ){
+					//go green;
+					myElement = greenBox;
+					otherElement = redBox;
+					console.log("I'm the callee!");
+				}
+
+	}
+
+	</script>
+
+</html>
